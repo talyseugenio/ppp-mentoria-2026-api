@@ -1,0 +1,26 @@
+{
+  "name": "ppp-mentoria-2024-api",
+  "version": "1.0.0",
+  "description": "API REST para gerenciamento de agendamentos de barbearia",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "barbearia",
+    "agendamentos",
+    "api",
+    "express"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^11.1.0",
+    "yamljs": "^0.3.0"
+  }
+}

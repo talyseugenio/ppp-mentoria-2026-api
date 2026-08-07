@@ -1,0 +1,788 @@
+openapi: 3.0.3
+info:
+  title: API de Agendamentos - Barbearia
+  description: API REST para gerenciamento de agendamentos de uma barbearia
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor local
+
+tags:
+  - name: Autenticação
+    description: Registro e login de clientes e profissionais
+  - name: Serviços
+    description: Gerenciamento de serviços oferecidos pela barbearia
+  - name: Agendamentos
+    description: Consulta de horários, criação, listagem, cancelamento e conclusão de agendamentos
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Mensagem de erro
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: João Silva
+        email:
+          type: string
+          format: email
+          example: joao@email.com
+        phone:
+          type: string
+          example: "11999999999"
+        createdAt:
+          type: string
+          format: date-time
+
+    Professional:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Carlos Barbeiro
+        email:
+          type: string
+          format: email
+          example: carlos@barbearia.com
+        phone:
+          type: string
+          example: "11988888888"
+        specialty:
+          type: string
+          example: Corte masculino
+        createdAt:
+          type: string
+          format: date-time
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Corte de cabelo
+        description:
+          type: string
+          example: Corte masculino tradicional
+        duration:
+          type: integer
+          example: 30
+          description: Duração em minutos
+        price:
+          type: number
+          format: float
+          example: 45.00
+        createdAt:
+          type: string
+          format: date-time
+
+    TimeSlot:
+      type: object
+      properties:
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "09:30"
+
+    AvailableTimesResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-08-10"
+        professionalId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        serviceDuration:
+          type: integer
+          example: 30
+        availableTimes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSlot'
+
+    AppointmentClientInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+
+    AppointmentProfessionalInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        specialty:
+          type: string
+
+    AppointmentServiceInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        duration:
+          type: integer
+        price:
+          type: number
+
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        clientId:
+          type: string
+          format: uuid
+        professionalId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-08-10"
+        startTime:
+          type: string
+          example: "09:00"
+        endTime:
+          type: string
+          example: "09:30"
+        status:
+          type: string
+          enum: [scheduled, cancelled, completed]
+        createdAt:
+          type: string
+          format: date-time
+        client:
+          $ref: '#/components/schemas/AppointmentClientInfo'
+        professional:
+          $ref: '#/components/schemas/AppointmentProfessionalInfo'
+        service:
+          $ref: '#/components/schemas/AppointmentServiceInfo'
+
+    ClientRegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - phone
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        phone:
+          type: string
+
+    ProfessionalRegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - phone
+        - specialty
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        phone:
+          type: string
+        specialty:
+          type: string
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    ClientLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        client:
+          $ref: '#/components/schemas/Client'
+
+    ProfessionalLoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        professional:
+          $ref: '#/components/schemas/Professional'
+
+    ServiceCreateRequest:
+      type: object
+      required:
+        - name
+        - description
+        - duration
+        - price
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+          description: Duração em minutos
+        price:
+          type: number
+
+    AppointmentCreateRequest:
+      type: object
+      required:
+        - professionalId
+        - serviceId
+        - date
+        - startTime
+      properties:
+        professionalId:
+          type: string
+          format: uuid
+        serviceId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-08-10"
+        startTime:
+          type: string
+          example: "09:00"
+
+paths:
+  /auth/clients/register:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar cliente
+      description: Cria um novo cliente na barbearia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientRegisterRequest'
+      responses:
+        '201':
+          description: Cliente registrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Campos obrigatórios ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: E-mail já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/professionals/register:
+    post:
+      tags:
+        - Autenticação
+      summary: Registrar profissional
+      description: Cria um novo profissional na barbearia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfessionalRegisterRequest'
+      responses:
+        '201':
+          description: Profissional registrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Professional'
+        '400':
+          description: Campos obrigatórios ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: E-mail já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/clients/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login de cliente
+      description: Autentica um cliente e retorna token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientLoginResponse'
+        '400':
+          description: Campos obrigatórios ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: E-mail ou senha inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/professionals/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Login de profissional
+      description: Autentica um profissional e retorna token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalLoginResponse'
+        '400':
+          description: Campos obrigatórios ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: E-mail ou senha inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /services:
+    get:
+      tags:
+        - Serviços
+      summary: Listar serviços
+      description: Retorna todos os serviços cadastrados
+      responses:
+        '200':
+          description: Lista de serviços
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+    post:
+      tags:
+        - Serviços
+      summary: Cadastrar serviço
+      description: Cadastra um novo serviço (apenas profissionais autenticados)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreateRequest'
+      responses:
+        '201':
+          description: Serviço cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '400':
+          description: Campos obrigatórios ausentes ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado - apenas profissionais
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /services/{id}:
+    get:
+      tags:
+        - Serviços
+      summary: Buscar serviço por ID
+      description: Retorna um serviço específico
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Serviço encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+        '404':
+          description: Serviço não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/available:
+    get:
+      tags:
+        - Agendamentos
+      summary: Consultar horários disponíveis
+      description: Retorna os horários disponíveis para um profissional, serviço e data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: professionalId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: serviceId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2026-08-10"
+      responses:
+        '200':
+          description: Horários disponíveis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailableTimesResponse'
+        '400':
+          description: Parâmetros inválidos ou ausentes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Profissional ou serviço não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments:
+    get:
+      tags:
+        - Agendamentos
+      summary: Listar agendamentos
+      description: Clientes visualizam apenas seus agendamentos. Profissionais visualizam todos.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de agendamentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Agendamentos
+      summary: Criar agendamento
+      description: Cria um novo agendamento (apenas clientes autenticados)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppointmentCreateRequest'
+      responses:
+        '201':
+          description: Agendamento criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Dados inválidos, horário passado ou fora do horário de funcionamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado - apenas clientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Profissional ou serviço não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Conflito de horário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/{id}:
+    get:
+      tags:
+        - Agendamentos
+      summary: Buscar agendamento por ID
+      description: Clientes só podem visualizar seus próprios agendamentos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agendamento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/{id}/cancel:
+    patch:
+      tags:
+        - Agendamentos
+      summary: Cancelar agendamento
+      description: Cliente cancela seu próprio agendamento
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agendamento cancelado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Agendamento já cancelado ou concluído
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Acesso negado - cliente só pode cancelar seus próprios agendamentos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /appointments/{id}/complete:
+    patch:
+      tags:
+        - Agendamentos
+      summary: Concluir atendimento
+      description: Profissional conclui um atendimento agendado
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Atendimento concluído com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+        '400':
+          description: Agendamento cancelado ou já concluído
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Apenas o profissional responsável pode concluir
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agendamento não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
