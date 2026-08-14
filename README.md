@@ -19,6 +19,7 @@ API REST para gerenciamento de agendamentos de uma barbearia, desenvolvida com N
 - **bcryptjs** — hash de senhas
 - **Swagger UI** — documentação interativa da API
 - **Banco de dados em memória** — armazenamento temporário dos dados
+- **Mocha, Chai e Supertest** — testes automatizados de API
 
 ## Estrutura do Projeto
 
@@ -34,6 +35,12 @@ src/
 ├── utils/           # Utilitários (validação de horários)
 ├── app.js           # Configuração do Express
 └── server.js        # Ponto de entrada da aplicação
+tests/
+├── auth/            # Testes de autenticação (CT-001 a CT-008)
+├── services/        # Testes de serviços (CT-009 a CT-013)
+├── availability/    # Testes de disponibilidade (CT-014 a CT-016)
+├── appointments/    # Testes de agendamentos (CT-017 a CT-033)
+└── helpers/         # Utilitários e preparação de dados de teste
 resources/
 └── swagger.yaml     # Documentação OpenAPI/Swagger
 ```
@@ -60,6 +67,30 @@ npm run dev
 ```
 
 A API estará disponível em `http://localhost:3000`.
+
+## Executando os Testes
+
+Os testes automatizados cobrem os 33 cenários definidos em `cenarios-de-teste.md`, utilizando Mocha, Chai e Supertest.
+
+```bash
+npm test
+```
+
+Não é necessário subir a API com `npm start` — os testes importam o `app` diretamente via Supertest.
+
+Os testes utilizam o banco de dados em memória, que é resetado automaticamente antes de cada cenário.
+
+Para executar um arquivo específico:
+
+```bash
+npx mocha tests/auth/auth.test.js
+```
+
+Para executar testes de um domínio:
+
+```bash
+npx mocha tests/appointments/*.test.js
+```
 
 ## Documentação Swagger
 
